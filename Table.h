@@ -5,30 +5,47 @@ namespace table
 {
 	class Table
 	{
-		struct Node {
-			double value;
+		class Node
+		{
+		private:
+			int value;
 			bool state;
-			Node(double _value) : value(_value), state(true) {};
+		public:
+			/* Конструктор и деструктор */
+			Node(int _value = 0);
+			~Node();
+
+			/* Геттеры и сеттеры */
+			int GetValue() const;
+			bool GetState() const;
+			Node& SetValue(int value);
+			Node& SetState(bool state);
 		};
 	private:
-		size_t static static_id;
+		/* Статические поля класса */
+		size_t static s_id;
 		bool static debug;
 
-		size_t id, size, buffer_size, default_size;
+		/* Поля класса */
+		size_t id, size, count;
 		Node** data;
+		double coef;
 
 		/* Функции хеширования */
-		size_t HashFunc(int value, size_t probe = 1);
+		size_t HashFunc(int value, size_t probe = 0);
 		size_t HashFunc1(int value);
 		size_t HashFunc2(int value);
 	public:
 		/* Конструтор и деструктор */
-		Table();
+		Table(size_t _size = 1);
 		~Table();
 
 		/* Основные функции */
-		size_t InsertValue(double value);
-		bool SearchValue(double value);
+		Table& InsertValue(int value);
+		size_t SearchValue(int value);
+
+		/* Перегрузка вывода таблицы */
+		friend std::ostream& operator << (std::ostream& out, Table& Base);
 	};
 };
 
