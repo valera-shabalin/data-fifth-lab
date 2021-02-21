@@ -35,6 +35,9 @@ namespace table
 		size_t HashFunc(int value, size_t probe = 0);
 		size_t HashFunc1(int value);
 		size_t HashFunc2(int value);
+
+		/* Вспомогательные методы */
+		bool InsertValueHelper(int value, size_t pos);
 	public:
 		/* Конструтор и деструктор */
 		Table(size_t _size = 1);
@@ -42,7 +45,8 @@ namespace table
 
 		/* Основные функции */
 		Table& InsertValue(int value);
-		size_t SearchValue(int value);
+		int SearchValue(int value);
+		Table& DeleteValue(int value);
 
 		/* Перегрузка вывода таблицы */
 		friend std::ostream& operator << (std::ostream& out, Table& Base);

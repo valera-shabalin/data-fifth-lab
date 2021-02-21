@@ -31,6 +31,26 @@ namespace table
 		this->state = state;
 		return *this;
 	}
+
+	/* Вспомогательные методы */
+	bool Table::InsertValueHelper(int value, size_t pos)
+	{
+		bool status = false;
+
+		if (this->data[pos] == nullptr)
+		{
+			this->data[pos] = new Node(value);
+			this->count++;
+			status = true;
+		}
+		else if (this->data[pos]->GetValue() == value)
+		{
+			cout << "Element '" << value << "' is already inserted." << endl;
+			status = true;
+		}
+		
+		return status;
+	}
 	
 	/* Конструктор */
 	Table::Table(size_t _size) : id(++s_id), count(0), size(_size), coef(0.618033)
@@ -60,10 +80,7 @@ namespace table
 	/* Функция вставки элемента */
 	Table& Table::InsertValue(int value)
 	{
-		size_t new_count = this->count;
-		bool status = false;
-
-		if (++new_count > this->size)
+		if (this->count == this->size)
 		{
 			cout << "The table is fuel." << endl;
 			return *this;
@@ -72,51 +89,93 @@ namespace table
 		size_t h1 = this->HashFunc1(value);
 		size_t h2 = this->HashFunc2(value);
 
-		cout << "Insert element '" << value << "'. H1 = " << h1 << " H2 = " << h2 << endl;
-
-		if (this->data[h1] == nullptr)
+		if (debug)
 		{
-			this->data[h1] = new Node(value);
-			status = true;
+			cout << "Insert element '" << value << "'. H1 = " << h1 << " H2 = " << h2 << endl;
 		}
-		else if (this->data[h2] == nullptr)
+
+		if (this->InsertValueHelper(value, h1))
 		{
-			this->data[h2] = new Node(value);
-			status = true;
+			return *this;
 		} 
-		else
-		{
-			size_t probe = 0;
-			do
-			{
-				size_t h3 = (h1 + probe * h2) % this->size;
-				cout << "Insert element '" << value << "'. Number of probe: " << probe << ", H1 = " << h1 << ", H2 = " << h2 << ", H3 = " << h3 << endl;
 
-				if (this->data[h3] == nullptr)
-				{
-					this->data[h3] = new Node(value);
-					status = true;
-					break;
-				}
-				probe++;
-			} while (probe < this->size);
-		}
-
-		if (!status)
+		if (this->InsertValueHelper(value, h2))
 		{
-			cout << "Insert element '" << value << "'. Failed to insert item into table." << endl;
-		}
-		else
-		{
-			this->count++;
 			return *this;
 		}
+
+		for (size_t probe = 0; probe < this->size; probe++)
+		{
+			size_t h3 = this->HashFunc(value, probe);
+
+			if (debug)
+			{
+				cout << "Insert element '" << value << "'. Number of probe: " << probe << ", H1 = " << h1 << ", H2 = " << h2 << ", H3 = " << h3 << endl;
+			}
+
+			if (this->InsertValueHelper(value, h3))
+			{
+				return *this;
+			}
+		}
+
+		cout << "Insert element '" << value << "'. Failed to insert item into table." << endl;
+		return *this;
 	}
 	
 	/* Функция поиска элемента */
-	size_t Table::SearchValue(int value)
+	int Table::SearchValue(int value)
 	{
-		return 0;
+		int result = -1;
+		size_t h1 = this->HashFunc1(value);
+		size_t h2 = this->HashFunc2(value);
+
+		if (this->data[h1] != nullptr && this->data[h1]->GetValue() == value)
+		{
+			result = h1;
+		}
+		else if (this->data[h2] != nullptr && this->data[h2]->GetValue() == value)
+		{
+			result = h2;
+		}
+		else
+		{
+			for (size_t probe = 0; probe < this->size; probe++)
+			{
+				size_t h3 = this->HashFunc(value, probe);
+				
+				if (debug)
+				{
+					cout << "Search element '" << value << "'. Number of probe: " << probe << ", H1 = " << h1 << ", H2 = " << h2 << ", H3 = " << h3 << endl;
+				}
+
+				if (this->data[h3] != nullptr && this->data[h3]->GetValue() == value)
+				{
+					result = h3;
+					break;
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/* Функция удаления элемента */
+	Table& Table::DeleteValue(int value)
+	{
+		size_t h1 = this->HashFunc1(value);
+		size_t h2 = this->HashFunc2(value);
+
+		if (this->data[h1] != nullptr && this->data[h1]->GetState())
+		{
+			this->data[h1]->SetState(false);
+			return *this;
+		}
+		else if (this->data[h2] != nullptr && this->data[h2]->GetState())
+		{
+			this->data[h2]->SetState(false);
+			return *this;
+		}
 	}
 
 	/* Перегрузка вывода таблицы */
@@ -145,16 +204,14 @@ namespace table
 	/* Функции хеширования */
 	size_t Table::HashFunc(int value, size_t probe)
 	{
-		size_t res = (this->HashFunc1(value) + probe * HashFunc2(value)) % this->size;
-		cout << "Key = " << res << endl;
-		return 0;
+		return (this->HashFunc1(value) + probe * HashFunc2(value)) % this->size;
 	}
 	size_t Table::HashFunc1(int value)
 	{
-		return (size_t)(this->size * fmod(value * this->coef, 1));
+		return this->size * fmod(value * this->coef, 1);
 	}
 	size_t Table::HashFunc2(int value)
 	{
-		return (size_t)((this->size - 2) * fmod(value * this->coef, 1));
+		return (this->size - 1) * fmod(value * this->coef, 1);
 	}
 }
