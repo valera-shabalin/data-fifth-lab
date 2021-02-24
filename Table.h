@@ -9,7 +9,7 @@ namespace table
 		{
 		private:
 			int value;
-			bool state;
+			bool state, deleted;
 		public:
 			/* Конструктор и деструктор */
 			Node(int _value = 0);
@@ -18,8 +18,7 @@ namespace table
 			/* Геттеры и сеттеры */
 			int GetValue() const;
 			bool GetState() const;
-			Node& SetValue(int value);
-			Node& SetState(bool state);
+			bool GetDeleted() const;
 
 			friend class Table;
 		};
@@ -30,7 +29,7 @@ namespace table
 
 		/* Поля класса */
 		size_t id, size, count;
-		Node** data;
+		Node* data;
 		double coef;
 
 		/* Функции хеширования */
@@ -48,6 +47,7 @@ namespace table
 		/* Основные функции */
 		Table& InsertValue(int value);
 		int SearchValue(int value);
+		bool DeleteValue(int value);
 
 		/* Перегрузка вывода таблицы */
 		friend std::ostream& operator << (std::ostream& out, Table& Base);

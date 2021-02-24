@@ -11,7 +11,7 @@ namespace table
 	bool Table::debug = true;
 
 	/* Конструктор и деструктор NODE */
-	Table::Node::Node(int _value) : value(_value), state(true) {}
+	Table::Node::Node(int _value) : value(_value), state(false), deleted(false) {}
 	Table::Node::~Node() {}
 	int Table::Node::GetValue() const
 	{
@@ -21,46 +21,39 @@ namespace table
 	{
 		return this->state;
 	}
-	Table::Node& Table::Node::SetValue(int value)
+	bool Table::Node::GetDeleted() const
 	{
-		this->value = value;
-		return *this;
-	}
-	Table::Node& Table::Node::SetState(bool state)
-	{
-		this->state = state;
-		return *this;
+		return this->deleted;
 	}
 
 	/* Вспомогательные методы */
 	bool Table::InsertValueHelper(int value, size_t pos)
 	{
-		bool status = false;
-
-		if (this->data[pos] == nullptr)
+		if (this->data[pos].state)
 		{
-			this->data[pos] = new Node(value);
-			this->count++;
-			status = true;
+			if (this->data[pos].deleted)
+			{
+				this->data[pos].value = value;
+				this->data[pos].deleted = false;
+				this->count++;
+				return true;
+			}
 		}
-		else if (this->data[pos]->value == value)
+		else
 		{
-			cout << "Element '" << value << "' is already inserted." << endl;
-			status = true;
+			this->data[pos].value = value;
+			this->data[pos].state = true;
+			this->count++;
+			return true;
 		}
 		
-		return status;
+		return false;
 	}
 	
 	/* Конструктор */
 	Table::Table(size_t _size) : id(++s_id), count(0), size(_size), coef(0.618033)
 	{
-		this->data = new Node*[size];
-
-		for (size_t i = 0; i < this->size; i++)
-		{
-			this->data[i] = nullptr;
-		}
+		this->data = new Node[size];
 
 		if (debug)
 		{
@@ -71,6 +64,12 @@ namespace table
 	/* Деструктор */
 	Table::~Table()
 	{
+		if (this->data != nullptr)
+		{
+			delete[] this->data;
+			this->data = nullptr;
+		}
+
 		if (debug)
 		{
 			cout << "Destructor 'Table' with ID: " << this->id << endl;
@@ -88,6 +87,7 @@ namespace table
 
 		size_t h1 = this->HashFunc1(value);
 		size_t h2 = this->HashFunc2(value);
+		bool status = false;
 
 		if (debug)
 		{
@@ -104,22 +104,26 @@ namespace table
 			return *this;
 		}
 
-		for (size_t probe = 0; probe < this->size; probe++)
+		size_t probe = 0;
+		do
 		{
 			size_t h3 = this->HashFunc(value, probe);
 
-			if (debug)
-			{
-				cout << "Insert element '" << value << "'. Number of probe: " << probe << ", H1 = " << h1 << ", H2 = " << h2 << ", H3 = " << h3 << endl;
-			}
-
 			if (this->InsertValueHelper(value, h3))
 			{
-				return *this;
+				status = true;
+				break;
 			}
+			probe++;
+		} while (probe < this->size);
+
+		cout << "Count of probe insert '" << value << "': " << probe << " " << endl;
+
+		if (!status)
+		{
+			cout << "Insert element '" << value << "'. Failed to insert item into table." << endl;
 		}
 
-		cout << "Insert element '" << value << "'. Failed to insert item into table." << endl;
 		return *this;
 	}
 	
@@ -128,39 +132,56 @@ namespace table
 	{
 		size_t h1 = this->HashFunc1(value);
 		size_t h2 = this->HashFunc2(value);
+		int result = -1;
 
-		if (this->data[h1] != nullptr && this->data[h1]->value == value)
+		if (this->data[h1].state && this->data[h1].value == value)
 		{
 			return h1;
 		}
 
-		if (this->data[h2] != nullptr && this->data[h2]->value == value)
+		if (this->data[h2].state && this->data[h2].value == value)
 		{
 			return h2;
 		}
 
-		for (size_t probe = 0; probe < this->size; probe++)
+		size_t probe = 0;
+		do
 		{
 			size_t h3 = this->HashFunc(value, probe);
-				
-			if (debug)
-			{
-				cout << "Search element '" << value << "'. Number of probe: " << probe << ", H1 = " << h1 << ", H2 = " << h2 << ", H3 = " << h3 << endl;
-			}
 
-			if (this->data[h3] != nullptr && this->data[h3]->value == value)
+			if (this->data[h3].state && this->data[h3].value == value && !this->data[h3].deleted)
 			{
-				return h3;
+				result = h3;
+				break;
 			}
+			probe++;
+		} while (probe < this->size);
+
+		cout << "Count of probe search '" << value << "': " << probe << endl;
+
+		return result;
+	}
+
+	/* Функция удаления элемента */
+	bool Table::DeleteValue(int value)
+	{
+		size_t pos = this->SearchValue(value);
+
+		if (pos < 0)
+		{
+			return false;
 		}
 
-		return -1;
+		this->data[pos].deleted = true;
+		this->count--;
+
+		return true;
 	}
 
 	/* Перегрузка вывода таблицы */
 	ostream& operator << (std::ostream& out, Table& table)
 	{
-		if (table.size == 0)
+		if (table.count == 0)
 		{
 			cout << "Table is empty.";
 			return out;
@@ -168,9 +189,9 @@ namespace table
 
 		for (size_t i = 0; i < table.size; i++)
 		{
-			if (table.data[i] != nullptr)
+			if (table.data[i].GetState() && !table.data[i].GetDeleted())
 			{
-				cout << table.data[i]->GetValue() << " ";
+				cout << table.data[i].GetValue() << " ";
 			}
 			else {
 				cout << "_" << " ";

@@ -19,6 +19,8 @@ int main()
         table.InsertValue(tmp);
     }
 
+    table.DeleteValue(92);
+
     cout << table << endl;
 
     do
