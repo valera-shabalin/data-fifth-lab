@@ -20,6 +20,8 @@ namespace table
 			bool GetState() const;
 			Node& SetValue(int value);
 			Node& SetState(bool state);
+
+			friend class Table;
 		};
 	private:
 		/* Статические поля класса */
@@ -46,7 +48,6 @@ namespace table
 		/* Основные функции */
 		Table& InsertValue(int value);
 		int SearchValue(int value);
-		Table& DeleteValue(int value);
 
 		/* Перегрузка вывода таблицы */
 		friend std::ostream& operator << (std::ostream& out, Table& Base);

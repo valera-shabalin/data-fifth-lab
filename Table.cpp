@@ -8,7 +8,7 @@ using namespace std;
 namespace table
 {
 	size_t Table::s_id = 0;
-	bool Table::debug = false;
+	bool Table::debug = true;
 
 	/* Конструктор и деструктор NODE */
 	Table::Node::Node(int _value) : value(_value), state(true) {}
@@ -43,7 +43,7 @@ namespace table
 			this->count++;
 			status = true;
 		}
-		else if (this->data[pos]->GetValue() == value)
+		else if (this->data[pos]->value == value)
 		{
 			cout << "Element '" << value << "' is already inserted." << endl;
 			status = true;
@@ -126,56 +126,35 @@ namespace table
 	/* Функция поиска элемента */
 	int Table::SearchValue(int value)
 	{
-		int result = -1;
 		size_t h1 = this->HashFunc1(value);
 		size_t h2 = this->HashFunc2(value);
 
-		if (this->data[h1] != nullptr && this->data[h1]->GetValue() == value)
+		if (this->data[h1] != nullptr && this->data[h1]->value == value)
 		{
-			result = h1;
+			return h1;
 		}
-		else if (this->data[h2] != nullptr && this->data[h2]->GetValue() == value)
-		{
-			result = h2;
-		}
-		else
-		{
-			for (size_t probe = 0; probe < this->size; probe++)
-			{
-				size_t h3 = this->HashFunc(value, probe);
-				
-				if (debug)
-				{
-					cout << "Search element '" << value << "'. Number of probe: " << probe << ", H1 = " << h1 << ", H2 = " << h2 << ", H3 = " << h3 << endl;
-				}
 
-				if (this->data[h3] != nullptr && this->data[h3]->GetValue() == value)
-				{
-					result = h3;
-					break;
-				}
+		if (this->data[h2] != nullptr && this->data[h2]->value == value)
+		{
+			return h2;
+		}
+
+		for (size_t probe = 0; probe < this->size; probe++)
+		{
+			size_t h3 = this->HashFunc(value, probe);
+				
+			if (debug)
+			{
+				cout << "Search element '" << value << "'. Number of probe: " << probe << ", H1 = " << h1 << ", H2 = " << h2 << ", H3 = " << h3 << endl;
+			}
+
+			if (this->data[h3] != nullptr && this->data[h3]->value == value)
+			{
+				return h3;
 			}
 		}
 
-		return result;
-	}
-
-	/* Функция удаления элемента */
-	Table& Table::DeleteValue(int value)
-	{
-		size_t h1 = this->HashFunc1(value);
-		size_t h2 = this->HashFunc2(value);
-
-		if (this->data[h1] != nullptr && this->data[h1]->GetState())
-		{
-			this->data[h1]->SetState(false);
-			return *this;
-		}
-		else if (this->data[h2] != nullptr && this->data[h2]->GetState())
-		{
-			this->data[h2]->SetState(false);
-			return *this;
-		}
+		return -1;
 	}
 
 	/* Перегрузка вывода таблицы */
